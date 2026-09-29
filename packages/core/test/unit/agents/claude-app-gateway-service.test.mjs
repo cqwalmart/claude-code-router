@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { applyClaudeAppGatewayConfig } from "@ccr/core/agents/claude-app/gateway-service.ts";
+import { applyClaudeAppGatewayConfig, restoreClaudeAppGatewayConfig } from "@ccr/core/agents/claude-app/gateway-service.ts";
+import { CONFIGDIR } from "@ccr/core/config/constants.ts";
 import { resolveClaudeAppGatewayRouteModel } from "@ccr/core/agents/claude-app/gateway-routes.ts";
 
 test("Claude App gateway config keeps 3P mode signed out of Claude.ai", () => {
@@ -114,6 +115,62 @@ test("Claude App gateway config preserves unknown keys when rewriting config lib
   } finally {
     rmSync(dataDir, { force: true, recursive: true });
     rmSync(activeDataDir, { force: true, recursive: true });
+  }
+});
+
+test("#1768 restore preserves Claude-written preferences and only reverts owned keys", () => {
+  const first = applyClaudeAppGatewayConfig(createConfig());
+  const rootFile = first.result.configFile;
+  const libraryFile = first.result.configLibraryFile;
+  const metaFile = path.join(path.dirname(libraryFile), "_meta.json");
+  const backupFile = path.join(CONFIGDIR, "claude-app-gateway-backup.json");
+  try {
+    writeJson(rootFile, { deploymentMode: "native", preference: false });
+    writeJson(libraryFile, { inferenceProvider: "original" });
+    writeJson(metaFile, { appliedId: "original", entries: [{ id: "original", name: "Original" }] });
+
+    // Takeover keeps the first pre-takeover backup; drop it so the second
+    // apply snapshots the seeded originals.
+    rmSync(backupFile, { force: true });
+
+    applyClaudeAppGatewayConfig(createConfig());
+    assert.equal(readJson(rootFile).deploymentMode, "3p");
+
+    writeJson(rootFile, { ...readJson(rootFile), preference: true });
+    writeJson(libraryFile, { ...readJson(libraryFile), chatTabEnabled: true, coworkEgressAllowedHosts: ["example.test"] });
+    const meta = readJson(metaFile);
+    writeJson(metaFile, { ...meta, userPreference: true, entries: [...(meta.entries ?? []), { id: "new-1", name: "New" }] });
+
+    restoreClaudeAppGatewayConfig();
+
+    assert.equal(readJson(rootFile).deploymentMode, "native");
+    assert.equal(readJson(rootFile).preference, true);
+    assert.equal(readJson(metaFile).appliedId, "original");
+    assert.equal(readJson(metaFile).userPreference, true);
+    assert.ok(readJson(metaFile).entries.some((entry) => entry.id === "new-1"));
+    assert.equal(readJson(libraryFile).chatTabEnabled, true);
+    assert.deepEqual(readJson(libraryFile).coworkEgressAllowedHosts, ["example.test"]);
+    assert.equal(existsSync(backupFile), false);
+  } finally {
+    restoreClaudeAppGatewayConfig();
+    rmSync(first.result.dataDir, { force: true, recursive: true });
+  }
+});
+
+test("#1768 restore removes takeover keys absent from the original while keeping new preferences", () => {
+  const { result } = applyClaudeAppGatewayConfig(createConfig());
+  const rootFile = result.configFile;
+  const metaFile = path.join(path.dirname(result.configLibraryFile), "_meta.json");
+  try {
+    writeJson(rootFile, { deploymentMode: "3p", userPreference: true });
+
+    restoreClaudeAppGatewayConfig();
+
+    assert.deepEqual(readJson(rootFile), { userPreference: true });
+    assert.equal(readJson(metaFile).appliedId, undefined);
+    assert.equal(existsSync(result.configLibraryFile), true);
+  } finally {
+    rmSync(result.dataDir, { force: true, recursive: true });
   }
 });
 
