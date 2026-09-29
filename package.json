@@ -6,7 +6,7 @@
   "description": "Local Claude Code Router gateway with CLI and web management UI.",
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/musistudio/claude-code-router.git"
+    "url": "git+https://github.com/cqwalmart/claude-code-router.git"
   },
   "bugs": {
     "url": "https://github.com/musistudio/claude-code-router/issues"
