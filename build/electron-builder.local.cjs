@@ -15,5 +15,8 @@ const config = {
 };
 
 delete config.afterSign;
+// Fork build: no upstream GitHub release feed, so packaged builds never emit
+// an app-update.yml pointing at musistudio/claude-code-router.
+delete config.publish;
 
 module.exports = config;

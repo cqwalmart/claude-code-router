@@ -59,7 +59,7 @@ class AppUpdateService {
     this.start();
     if (!this.isUpdaterSupported()) {
       return this.publishStatus({
-        lastError: "Updates are only available in packaged builds.",
+        lastError: "Updates are disabled in this build.",
         state: "error"
       });
     }
@@ -325,7 +325,9 @@ class AppUpdateService {
   }
 
   private isUpdaterSupported(): boolean {
-    return app.isPackaged || Boolean(readEnvString("CCR_UPDATE_FEED_URL"));
+    // Fork build: never follow the upstream release feed. Self-hosted updates
+    // stay possible by explicitly setting CCR_UPDATE_FEED_URL.
+    return Boolean(readEnvString("CCR_UPDATE_FEED_URL"));
   }
 }
 
