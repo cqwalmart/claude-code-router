@@ -841,7 +841,8 @@ export function isFusionWebSearchToolName(name: string): boolean {
   return normalized === BUILTIN_FUSION_WEB_SEARCH_TOOL_NAME ||
     normalized.startsWith(`${BUILTIN_FUSION_WEB_SEARCH_TOOL_NAME}_`) ||
     normalized.endsWith(`_${BUILTIN_FUSION_WEB_SEARCH_TOOL_NAME}`) ||
-    normalized.includes("search_web");
+    normalized.includes("search_web") ||
+    normalized.toLowerCase().includes("websearch");
 }
 
 export function selectedFusionToolName(toolsText: string): string {

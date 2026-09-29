@@ -4,6 +4,7 @@ import {
   createVirtualModelDraft,
   createVirtualModelDraftFromProfile,
   isBuiltInFusionToolName,
+  isFusionWebSearchToolName,
   selectedFusionToolNamesFromProfile,
   validateVirtualModelDraft,
   virtualModelProfileFromDraft,
@@ -13,6 +14,15 @@ import {
 import { BUILTIN_FUSION_IMAGE_GENERATION_TOOL_NAME, BUILTIN_FUSION_VIDEO_GENERATION_TOOL_NAME } from "@ccr/core/contracts/app.ts";
 import { fusionToolOptions } from "@ccr/ui/pages/home/shared/options.ts";
 import { appConfigFixture } from "../fixtures/index.ts";
+
+test("Fusion web search matcher accepts PascalCase WebSearch tool names", () => {
+  assert.equal(isFusionWebSearchToolName("WebSearch"), true);
+  assert.equal(isFusionWebSearchToolName("websearch"), true);
+  assert.equal(isFusionWebSearchToolName("web_search"), true);
+  assert.equal(isFusionWebSearchToolName("glm_5_3_fusion_web_search"), true);
+  assert.equal(isFusionWebSearchToolName("fusion_plus_web_search"), true);
+  assert.equal(isFusionWebSearchToolName("read_file"), false);
+});
 
 test("Fusion draft saves multiple selected tools into one profile", () => {
   const config = appConfigFixture();

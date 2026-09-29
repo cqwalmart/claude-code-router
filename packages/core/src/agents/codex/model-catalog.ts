@@ -801,7 +801,8 @@ function fusionWebSearchToolNameMatches(name: string): boolean {
   return normalized === BUILTIN_FUSION_WEB_SEARCH_TOOL_NAME ||
     normalized.startsWith(`${BUILTIN_FUSION_WEB_SEARCH_TOOL_NAME}_`) ||
     normalized.endsWith(`_${BUILTIN_FUSION_WEB_SEARCH_TOOL_NAME}`) ||
-    normalized.includes("search_web");
+    normalized.includes("search_web") ||
+    normalized.includes("websearch");
 }
 
 function recordValue(value: unknown): Record<string, unknown> | undefined {
